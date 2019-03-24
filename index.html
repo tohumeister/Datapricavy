@@ -1,129 +1,52 @@
-<!DOCTYPE html>
-  <html ng-app="profile">
-  <head>
-    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.3.14/angular.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/angular-ui-router/0.2.15/angular-ui-router.min.js"></script>
-    <meta charset="utf-8">
-    <meta http-equiv="Content-Type" content="text/html">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Github Profile Viewer</title>
-    <link rel="stylesheet" href="css/tachyons.min.css" type="text/css" media="screen" charset="utf-8">
-    <link rel="stylesheet" href="http://mrmrs.io/gradients/css/gradients.min.css" type="text/css" media="screen" charset="utf-8">
-  </head>
-  <body ng-cloak ui-view class="sans-serif" style="background-color: #fbfbfb">
-    <div id="w">
-      <div class="tc pvm bg-light-gray">
-        <form name="githubSearch" ng-submit="goUsername(username)">
-          <input type="text" id="ghusername" autofocus ng-model="username" placeholder="Github username..." class="mrm f5 phm pvs br2 ba b--white">
-          <button id="ghsubmitbtn" ng-model="username" class="input-reset f5 bg-white bw0 br2 dark-gray pvs phm ban dim">Go</button>
-        <div id="ghapidata"></div>
-      </div>
-      <div ng-hide="loaded" class="bg-light-gray pvxxl phm phl-m phxl-l bt b--white-75">
-        <p class="black-80 fw4 f4 f2-ns lh-copy mvn">
-          A mobile friendly, fully responsive GitHub profile.<br>
-        </p>
-        <p class="black-80 f4 center lh-copy">
-          Want a feature? <a href="https://github.com/mrmrs/profile/issues" class="link black-80 fw7 dim">Let us know :)</a>
-        </p>
-      </div>
-      <div ng-show="userNotFound">
-        <h2>Sorry we couldn't find that user. Please try searching again.</h2>
-        <p>Try searching again</p>
-      </div>
-      <div ng-show="loaded">
-        <div class="pvl">
-          <div class="tc">
-            <a href="{{ user.html_url }}" target="_blank" class="link dim"> <img src="{{ user.avatar_url }}" width="96" height="96" alt="{{ user.login }}" class="br-100"></a>
-          </div>
-          <div class="tc">
-            <h2 class="mvn tc">
-              <span class="dib"><a href="{{user.html_url}}" target="_blank" class="f2 link dim dark-gray">{{user.login}}</a></span>
-            </h2>
-          </div>
-          <p class="tc mtn mid-gray f6">{{user.name}}</p>
-          <div>
-            <p class="tc mbn dn"><span class="">{{ user.public_repos }}</span> public repos</p>
-            <p class="tc mvn mid-gray"><span class="gray f6">{{ user.location }}</span></p>
-          </div>
-        </div>
-        <div>
-          <p ng-hide="repos">No repos!</p>
-          <div ng-show="repos">
-            <article ng-repeat="repo in repos" class="">
-              <a class="db f3 f2-ns b link dim dark-gray pam phl-m phxl-l mw10 center" href="{{repo.html_url}}" target="_blank">
-                {{repo.name}}
-                <span class="db f5 fw4 mvn lh-copy measure">{{repo.description}}</span>
-                <span class="f6 fw4">{{repo.stargazers_count}} stars</span>
-              </a>
-            </article>
-          </div>
-        </div>
-      </div>
-    </div>
-    <footer class="pvxl phm phl-m phxl-l bt b--light-gray mtxl">
-      <a href="http://tachyons.io" class="f6 link dim dark-gray db">Built with <b>Tachyons</b></a>
-      <p class="lh-copy measure">
-        This project is opensource and needs lots of love. If you're interested in contributing in anyway: opening issues, writing docs, or even building new features, check out the project on <a href="http://github.com/mrmrs/profile" class="link dim black b">GitHub</a>.
-      </p>
-    </footer>
-
-
-    <script>
-    angular.module('profile', ['ui.router']).config(['$stateProvider', '$urlRouterProvider', function($stateProvider, $urlRouterProvider) {
-        $stateProvider
-        .state('index', {url: '', controller: 'github'})
-        .state('user', {
-          url: "/:user",
-          controller: 'github'
-        })
-      }])
-      angular.module('profile').controller('github', ['$scope', '$http', '$stateParams', '$state', function($scope, $http, $stateParams, $state) {
-        $scope.goUsername = function (name) {
-          $state.transitionTo('user', {user: name})
-        }
-        $scope.getGitInfo = function () {
-          $scope.userNotFound = false;
-          $scope.loaded = false;
-          $http.get("https://api.github.com/users/" + $scope.user)
-          .success(function (data) {
-            if (data.name == "") data.name = data.login;
-            $scope.user = data;
-            $scope.loaded = true;
-          })
-          .error(function () {
-            $scope.userNotFound = true;
-          });
-          $scope.repos = [];
-          addRepos = function(url) {
-            $http.get(url).success(function (data, status, headers) {
-              $scope.repos = $scope.repos.concat(data);
-              console.log(data)
-              var nextUrl;
-              if ((headers().link)) {
-                nextUrl = headers().link.match(/<([^\>]*)>; rel\=\"next\"/);
-              }
-              if (nextUrl) {
-                addRepos(nextUrl[1]);
-              }
-            });
-          };
-          addRepos("https://api.github.com/users/" + $scope.user + "/repos");
-        }
-        if ($stateParams.user) {
-          console.log($stateParams.user)
-          $scope.user = angular.copy($stateParams.user);
-          $scope.getGitInfo();
-        }
-      }
-      ])
-    </script>
-    <script>
-      (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
-        (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
-        m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
-      })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
-      ga('create', 'UA-52095955-1', 'auto');
-      ga('send', 'pageview');
-    </script>
-  </body>
-</html>
+   <body>
+    <h2>Privacy Policy</h2> <p>  built the The Bald app as a Free app. This SERVICE is provided by
+                     at no cost and is intended for use as is.
+                  </p> <p>This page is used to inform visitors regarding my policies with the collection, use, and disclosure
+                    of Personal Information if anyone decided to use my Service.
+                  </p> <p>If you choose to use my Service, then you agree to the collection and use of information in
+                    relation to this policy. The Personal Information that I collect is used for providing and improving
+                    the Service. I will not use or share your information with anyone except as described
+                    in this Privacy Policy.
+                  </p> <p>The terms used in this Privacy Policy have the same meanings as in our Terms and Conditions, which is
+                    accessible at The Bald unless otherwise defined in this Privacy Policy.
+                  </p> <p><strong>Information Collection and Use</strong></p> <p>For a better experience, while using our Service, I may require you to provide us with certain
+                    personally identifiable information, including but not limited to none. The information that I request will be retained on your device and is not collected by me in any way.
+                  </p> <p>The app does use third party services that may collect information used to identify you.</p> <div><p>Link to privacy policy of third party service providers used by the app</p> <ul><li><a href="https://www.google.com/policies/privacy/" target="_blank">Google Play Services</a></li><li><a href="https://support.google.com/admob/answer/6128543?hl=en" target="_blank">AdMob</a></li><!----><!----><!----><!----><!----><!----></ul></div> <p><strong>Log Data</strong></p> <p> I want to inform you that whenever you use my Service, in a case of
+                    an error in the app I collect data and information (through third party products) on your phone
+                    called Log Data. This Log Data may include information such as your device Internet Protocol (“IP”) address,
+                    device name, operating system version, the configuration of the app when utilizing my Service,
+                    the time and date of your use of the Service, and other statistics.
+                  </p> <p><strong>Cookies</strong></p> <p>Cookies are files with a small amount of data that are commonly used as anonymous unique identifiers.
+                    These are sent to your browser from the websites that you visit and are stored on your device's internal
+                    memory.
+                  </p> <p>This Service does not use these “cookies” explicitly. However, the app may use third party code and
+                    libraries that use “cookies” to collect information and improve their services. You have the option to
+                    either accept or refuse these cookies and know when a cookie is being sent to your device. If you choose
+                    to refuse our cookies, you may not be able to use some portions of this Service.
+                  </p> <p><strong>Service Providers</strong></p> <p> I may employ third-party companies and individuals due to the following reasons:</p> <ul><li>To facilitate our Service;</li> <li>To provide the Service on our behalf;</li> <li>To perform Service-related services; or</li> <li>To assist us in analyzing how our Service is used.</li></ul> <p> I want to inform users of this Service that these third parties have access to
+                    your Personal Information. The reason is to perform the tasks assigned to them on our behalf. However,
+                    they are obligated not to disclose or use the information for any other purpose.
+                  </p> <p><strong>Security</strong></p> <p> I value your trust in providing us your Personal Information, thus we are striving
+                    to use commercially acceptable means of protecting it. But remember that no method of transmission over
+                    the internet, or method of electronic storage is 100% secure and reliable, and I cannot guarantee
+                    its absolute security.
+                  </p> <p><strong>Links to Other Sites</strong></p> <p>This Service may contain links to other sites. If you click on a third-party link, you will be directed
+                    to that site. Note that these external sites are not operated by me. Therefore, I strongly
+                    advise you to review the Privacy Policy of these websites. I have no control over
+                    and assume no responsibility for the content, privacy policies, or practices of any third-party sites
+                    or services.
+                  </p> <p><strong>Children’s Privacy</strong></p> <p>These Services do not address anyone under the age of 13. I do not knowingly collect
+                    personally identifiable information from children under 13. In the case I discover that a child
+                    under 13 has provided me with personal information, I immediately delete this from
+                    our servers. If you are a parent or guardian and you are aware that your child has provided us with personal
+                    information, please contact me so that I will be able to do necessary actions.
+                  </p> <p><strong>Changes to This Privacy Policy</strong></p> <p> I may update our Privacy Policy from time to time. Thus, you are advised to review
+                    this page periodically for any changes. I will notify you of any changes by posting
+                    the new Privacy Policy on this page. These changes are effective immediately after they are posted on
+                    this page.
+                  </p> <p><strong>Contact Us</strong></p> <p>If you have any questions or suggestions about my Privacy Policy, do not hesitate to contact
+                    me.
+                  </p> <p>This privacy policy page was created at <a href="https://privacypolicytemplate.net" target="_blank">privacypolicytemplate.net</a>
+                    and modified/generated by <a href="https://app-privacy-policy-generator.firebaseapp.com/" target="_blank">App
+                      Privacy Policy Generator</a></p>
+    </body>
